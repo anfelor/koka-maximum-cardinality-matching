@@ -1,0 +1,5 @@
+.vscode
+instances/
+*.zip
+*.out
+**/out/**
