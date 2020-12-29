@@ -26,8 +26,6 @@ private fun is-valid(e : edge) {
 
 // Find the path P between x and y in the tree given by pred \circ s.id
 // in time O(|P|*log(|P|))
-// TODO: The original implementation uses an additional set for 
-// membership instead of just a list.
 private fun find-cycle(pred : vector<edge>, s : components<h>, x : node-id, y : node-id) : <st<h>, exn, div> cycle {
     var from-x := Cons((x, x), Nil)
     var from-y := Cons((y, y), Nil)

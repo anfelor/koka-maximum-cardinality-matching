@@ -56,8 +56,7 @@ public fun find-exposed(m : matching, to_ignore : vector<bool>) : <exn> node-id 
     }.maybe(invalid-node-id)
 }
 
-// TODO: The compiler demands div, but why?
-public fun to-graph(m : matching) : <exn, div> graph {
+public fun to-graph(m : matching) : <exn> graph {
     var g := new-graph(m.num-nodes)
     for(0, m.num-nodes - 1) fn(x) {
         val y = m.matched-to(x)
