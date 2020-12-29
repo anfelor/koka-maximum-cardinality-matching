@@ -27,7 +27,7 @@ private fun is-valid(e : edge) {
 // in time O(|P|*log(|P|))
 // TODO: The original implementation uses an additional set for 
 // membership instead of just a list.
-private fun find-cycle(pred : vector<edge>, s : components<h>, x : node-id, y : node-id) : <st<h>, exn, div> cycle<h> {
+private fun find-cycle(pred : vector<edge>, s : components<h>, x : node-id, y : node-id) : <st<h>, exn, div> cycle {
     var from-x := Cons((x, x), Nil)
     var from-y := Cons((y, y), Nil)
     val undef = (x, x)
@@ -48,7 +48,7 @@ private fun find-cycle(pred : vector<edge>, s : components<h>, x : node-id, y : 
             Cons(h, t) -> Cons(if(h.fst == x) then (y, x) else (x, y), t.init)
             Nil -> Nil
         }
-        Cycle(apex, ref(vector(vec')))
+        Cycle(apex, vector(vec'))
     }
     until-just {
         if(from-x.any fn(a){ a.comp == from-y.head(undef).comp }) {
@@ -69,7 +69,7 @@ private fun find-cycle(pred : vector<edge>, s : components<h>, x : node-id, y : 
     }
 }
 
-private fun add-neighbors(l : list<edge>, g : graph<h>, x : node-id, to-ignore : vector<bool>) : <st<h>, exn> list<edge> {
+private fun add-neighbors(l : list<edge>, g : graph, x : node-id, to-ignore : vector<bool>) : <st<h>, exn> list<edge> {
     var l' := l
     g.get-node(x).neighbors().foreach fn(y){
         if(! to-ignore[y]) {
@@ -79,7 +79,8 @@ private fun add-neighbors(l : list<edge>, g : graph<h>, x : node-id, to-ignore :
     l'
 }
 
-public fun perfect-matching(g : graph<h>, m : matching<h>, to-ignore : vector<bool>) : <st<h>, exn, div> maybe<frustrated-tree> {
+public fun perfect-matching(g : graph, m' : matching, to-ignore : vector<bool>) : <st<h>, exn, div> maybe<frustrated-tree> {
+    var m := m'
     val r = m.find-exposed(to-ignore)
     if(r == invalid-node-id) {
         return Nothing
@@ -119,7 +120,7 @@ public fun perfect-matching(g : graph<h>, m : matching<h>, to-ignore : vector<bo
                             while { y != invalid-node-id } {
                                 val e = pred[c.id(y)]
                                 u.unshrink(m, c, e.snd)
-                                m.match-to(e.fst, e.snd)
+                                m := m.match-to(e.fst, e.snd)
                                 y := pred[c.id(e.snd)].snd
                             }
                             val new-card = m.cardinality
@@ -136,7 +137,7 @@ public fun perfect-matching(g : graph<h>, m : matching<h>, to-ignore : vector<bo
                     } else {
                         val cycle = find-cycle(pred, c, x, y)
                         val apex-pred = pred[c.id(cycle.apex.fst)]
-                        (!cycle.edges).foreach fn(i) {
+                        cycle.edges.foreach fn(i) {
                             if(is-odd[i.fst]) {
                                 l := add-neighbors(l, g, i.fst, to-ignore)
                                 is-even[i.fst] := True

@@ -54,43 +54,43 @@ public fun neighbors(n : node) : list<node-id> {
     n.neighbors_
 }
 
-public alias graph<h> = graph_<h>
-private struct graph_<h> {
-    nodes_ : ref<h, vector<node>>
-    num_edges_ : ref<h, int>
+public alias graph = graph_
+private struct graph_ {
+    nodes_ : vector<node>
+    num_edges_ : int
 }
 
-public fun new-graph(num_nodes : int) : alloc<h> graph<h> {
-    Graph_(ref(vector(num_nodes, new-node())), ref(0))
+public fun new-graph(num_nodes : int) : graph {
+    Graph_(vector(num_nodes, new-node()), 0)
 }
 
-public fun num-nodes(g : graph<h>) : read<h> int {
-    (!g.nodes_).length
+public fun num-nodes(g : graph) : int {
+    g.nodes_.length
 }
 
-public fun get-node(g : graph<h>, id : node-id) : <exn, read<h>> node {
-    val ns = !g.nodes_
-    ns[id]
+public fun get-node(g : graph, id : node-id) : <exn> node {
+    g.nodes_[id]
 }
 
-private fun set-node(g : graph<h>, id : node-id, value : node) : <exn, read<h>, write<h>> () {
-    var ns := !g.nodes_
+private fun set-node(g : graph, id : node-id, value : node) : <exn> graph {
+    var ns := g.nodes_
     ns[id] := value
-    g.nodes_.set(ns)
+    g(nodes_ = ns)
 }
 
-public fun add-edge(g : graph<h>, id1 : node-id, id2 : node-id) : <read<h>, write<h>, exn> () {
+public fun add-edge(g' : graph, id1 : node-id, id2 : node-id) : <exn> graph {
     if(id1 == id2) {
         raise("Graph class does not support loops!")
     }
+    var g := g'
     val n1 = g.get-node(id1)
-    g.set-node(id1, n1.add-neighbor(id2))
+    g := g.set-node(id1, n1.add-neighbor(id2))
     val n2 = g.get-node(id2)
-    g.set-node(id2, n2.add-neighbor(id1))
-    g.num_edges_.set(!g.num_edges_ + 1)
+    g := g.set-node(id2, n2.add-neighbor(id1))
+    g(num_edges_ = g.num_edges_ + 1)
 }
 
-public fun build-graph(dimacs : string) : <exn, st<h>, div> graph<h> {
+public fun build-graph(dimacs : string) : <exn, div> graph {
     val lines = dimacs.lines.filter( fn(s) { s.first.string != "c" })
     val [num_nodes, _num_edges] = match(lines) {
         Nil -> raise("Could not find problem line in DIMACS string")
@@ -108,16 +108,16 @@ public fun build-graph(dimacs : string) : <exn, st<h>, div> graph<h> {
             pstring("e")
             many { whitespace0(); pint() }
         }).either) {
-            Right([i, j]) -> g.add-edge(i.from-dimacs-id, j.from-dimacs-id)
+            Right([i, j]) -> g := g.add-edge(i.from-dimacs-id, j.from-dimacs-id)
             _ -> ()
         }
     }
     return(g)
 }
 
-public fun show(g : graph<h>) : <read<h>, exn> string {
+public fun show(g : graph) : <exn> string {
     var str := "c This encodes a graph in DIMACS format\n"
-      + "p edge " + g.num-nodes().show + " " + (!g.num_edges_).show + "\n"
+      + "p edge " + g.num-nodes().show + " " + g.num_edges_.show + "\n"
     for(0, g.num-nodes() - 1) fn(i) {
         val n = g.get-node(i)
         n.neighbors().foreach fn(j) {

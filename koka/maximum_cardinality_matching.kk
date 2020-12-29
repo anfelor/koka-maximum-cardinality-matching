@@ -10,7 +10,7 @@ import std/os/path
 import std/os/file
 import std/os/env
 
-public fun max-cardinality-matching(g : graph<h>) : <st<h>, exn, div> matching<h> {
+public fun max-cardinality-matching(g : graph) : <st<h>, exn, div> matching {
     var to-ignore := vector(g.num-nodes, False)
     var m := new-matching(g.num-nodes)
     until-just {

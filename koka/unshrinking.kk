@@ -13,15 +13,14 @@ import components
 // highest up in the tree at the moment of creation).
 // The second element are the edges. Since we use pseudo-nodes
 // each node is given by the endpoint of its entering edges.
-public struct cycle<h> {
+public struct cycle {
     apex : (node-id, node-id)
-    edges : ref<h, vector<edge>>
+    edges : vector<edge>
 }
 
-public fun show(c : cycle<h>) : <read<h>> string {
+public fun show(c : cycle) : string {
     var s := "Cycle((" + c.apex.fst.show + ", " + c.apex.snd.show + "), ["
-    val edges = !c.edges
-    edges.foreach fn(e){
+    c.edges.foreach fn(e){
         s := s + "(" + e.fst.show + ", " + e.snd.show + "), "
     }
     s + "]"
@@ -38,45 +37,44 @@ private fun reverse(c : vector<edge>) : <exn> vector<edge> {
     c'
 }
 
-public fun reverse(c : cycle<h>) : <st<h>, exn> cycle<h> {
-    Cycle(c.apex, ref((!c.edges).reverse))
+public fun reverse(c : cycle) : <exn> cycle {
+    Cycle(c.apex, c.edges.reverse)
 }
 
-public alias unshrinking<h> = unshrinking_<h>
-private struct unshrinking_<h> {
-    cycles_ : list<cycle<h>>
-    matched_cycle_ : ref<h, vector<int>>
+public alias unshrinking = unshrinking_
+private struct unshrinking_ {
+    cycles_ : list<cycle>
+    matched_cycle_ : vector<int>
 }
 
 public fun new-unshrinking(num_nodes : int) {
-    Unshrinking_([], ref(vector(num_nodes, invalid-node-id)))
+    Unshrinking_([], vector(num_nodes, invalid-node-id))
 }
 
-public fun add-cycle(u : unshrinking<h>, m : matching<h>, c : cycle<h>) : <exn, st<h>> unshrinking<h> {
-    var e := !c.edges
-    var mc_ := !u.matched_cycle_
-    e.foreach fn(i) {
+public fun add-cycle(u : unshrinking, m : matching, c : cycle) : <exn> unshrinking {
+    var mc_ := u.matched_cycle_
+    c.edges.foreach fn(i) {
         if(m.matched-to(i.fst) == i.snd) {
             mc_[i.fst] := u.cycles_.length
             mc_[i.snd] := u.cycles_.length
         }
     }
-    u.matched_cycle_.set(mc_)
-    u(cycles_ = Cons(c, u.cycles_))
+    Unshrinking_(Cons(c, u.cycles_), mc_)
 }
 
 // Unshrink the matching cycle for a node R(x), where
 // x has an incident matching edge into R(x).
-public fun unshrink(u : unshrinking<h>, m : matching<h>, c : components<h>, x : node-id, expanded : list<int> = []) : <st<h>, exn, div> () {
+public fun unshrink(u : unshrinking, m' : matching, c : components<h>, x : node-id, expanded : list<int> = []) : <st<h>, exn, div> matching {
+    var m := m'
     val y = m.matched-to(x)
     val comp = c.id(x)
-    var mc_ := !u.matched_cycle_
+    val mc_ = u.matched_cycle_
     val mc = u.cycles_.length - mc_[x] - 1
-    if(y == invalid-node-id) return ()
-    if(c.id(y) != comp || (expanded.find fn(a){a == mc}).is-just) return ()
+    if(y == invalid-node-id) return m
+    if(c.id(y) != comp || (expanded.find fn(a){a == mc}).is-just) return m
     var expanded' := Cons(mc, expanded)
     val cyc = u.cycles_[mc].unjust
-    var cyce := !cyc.edges
+    var cyce := cyc.edges
     
     var next : int := for-while(0, cyce.length - 1) fn(i) {
         if(cyce[i].fst == x && cyce[i].snd == y) {
@@ -93,12 +91,12 @@ public fun unshrink(u : unshrinking<h>, m : matching<h>, c : components<h>, x : 
     while { (cyce[next].fst) != cyc.apex.fst && (cyce[next].fst) != cyc.apex.snd } {
         if(match_next) {
             if(mc_[cyce[next].fst] != mc_[x]) {
-                u.unshrink(m, c, cyce[next].fst, expanded')
+                m := u.unshrink(m, c, cyce[next].fst, expanded')
             }
             if(mc_[cyce[next].snd] != mc_[x]) {
-                u.unshrink(m, c, cyce[next].snd, expanded')
+                m := u.unshrink(m, c, cyce[next].snd, expanded')
             }
-            m.match-to(cyce[next].fst, cyce[next].snd)
+            m := m.match-to(cyce[next].fst, cyce[next].snd)
         }
         match_next := !match_next
         next := next + 1
@@ -106,4 +104,5 @@ public fun unshrink(u : unshrinking<h>, m : matching<h>, c : components<h>, x : 
             next := 0
         }
     }
+    m
 }
