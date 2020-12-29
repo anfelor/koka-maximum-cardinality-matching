@@ -4,6 +4,7 @@ import graph
 import matching
 import components
 import unshrinking
+import int_set
 
 // A frustrated tree for a graph.
 public struct frustrated-tree {
@@ -30,6 +31,8 @@ private fun is-valid(e : edge) {
 private fun find-cycle(pred : vector<edge>, s : components<h>, x : node-id, y : node-id) : <st<h>, exn, div> cycle {
     var from-x := Cons((x, x), Nil)
     var from-y := Cons((y, y), Nil)
+    var visited-x := empty-int-set.insert(s.id(x))
+    var visited-y := empty-int-set.insert(s.id(y))
     val undef = (x, x)
     fun comp(e : edge) { s.id(e.snd) }
     fun merge(fr : list<edge>, ba : list<edge>) {
@@ -51,19 +54,21 @@ private fun find-cycle(pred : vector<edge>, s : components<h>, x : node-id, y : 
         Cycle(apex, vector(vec'))
     }
     until-just {
-        if(from-x.any fn(a){ a.comp == from-y.head(undef).comp }) {
+        if(visited-x.contains(from-y.head(undef).comp)) {
             return Just(merge(from-x, from-y))
         }
-        if(from-y.any fn(a){ a.comp == from-x.head(undef).comp }) {
+        if(visited-y.contains(from-x.head(undef).comp)) {
             return Just(merge(from-y, from-x))
         }
         val x' = pred[from-x.head(undef).comp]
         val y' = pred[from-y.head(undef).comp]
         if(x'.is-valid) {
             from-x := Cons(x', from-x)
+            visited-x := visited-x.insert(x'.comp)
         }
         if(y'.is-valid) {
             from-y := Cons(y', from-y)
+            visited-y := visited-y.insert(y'.comp)
         }
         Nothing
     }

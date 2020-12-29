@@ -3,6 +3,7 @@ module unshrinking
 import graph
 import matching
 import components
+import int_set
 
 // Unlike in the presentation in the lecture, we don't actually
 // shrink and unshrink. Instead we save the cycles and "unshrink"
@@ -64,15 +65,15 @@ public fun add-cycle(u : unshrinking, m : matching, c : cycle) : <exn> unshrinki
 
 // Unshrink the matching cycle for a node R(x), where
 // x has an incident matching edge into R(x).
-public fun unshrink(u : unshrinking, m' : matching, c : components<h>, x : node-id, expanded : list<int> = []) : <st<h>, exn, div> matching {
+public fun unshrink(u : unshrinking, m' : matching, c : components<h>, x : node-id, expanded : int-set = empty-int-set) : <st<h>, exn, div> matching {
     var m := m'
     val y = m.matched-to(x)
     val comp = c.id(x)
     val mc_ = u.matched_cycle_
     val mc = u.cycles_.length - mc_[x] - 1
     if(y == invalid-node-id) return m
-    if(c.id(y) != comp || (expanded.find fn(a){a == mc}).is-just) return m
-    var expanded' := Cons(mc, expanded)
+    if(c.id(y) != comp || expanded.contains(mc)) return m
+    val expanded' = expanded.insert(mc)
     val cyc = u.cycles_[mc].unjust
     var cyce := cyc.edges
     
