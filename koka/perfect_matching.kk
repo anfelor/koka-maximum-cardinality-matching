@@ -44,7 +44,7 @@ private fun find-cycle(pred : vector<edge>, s : components<h>, x : node-id, y : 
             Nothing
         }
         val apex = (fr'.head(undef).snd, ba.head(undef).snd)
-        val vec = fr'.reverse + ba.map fn(a){ (a.snd, a.fst) } 
+        val vec = fr'.reverse + ba.map(invert)
         val vec' = match vec {
             Cons(h, t) -> Cons(if(h.fst == x) then (y, x) else (x, y), t.init)
             Nil -> Nil
